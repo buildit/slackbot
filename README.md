@@ -1,2 +1,1 @@
-# slackbot
-Slackbot used within Buildit slack channels
+Initialization of Project

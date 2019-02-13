@@ -1,6 +1,9 @@
 package poll
 
-import "testing"
+import (
+	"github.com/nlopes/slack"
+	"testing"
+)
 
 func TestSplitParameters(t *testing.T) {
 	input := `"My Topic's" Option1 Option2 "Option 3"`
@@ -18,5 +21,72 @@ func TestSplitParameters(t *testing.T) {
 	}
 	if output[3] != "Option 3" {
 		t.Errorf("Third item in slice is incorrect, got: %s, want: %s.", output[3], "Option 3")
+	}
+}
+
+func TestOptionTextBuider(t *testing.T) {
+	option1 := PollOption{
+		Name: "Option1",
+		Vote: 1,
+	}
+	option2 := PollOption{
+		Name: "Option2",
+		Vote: 2,
+	}
+	option3 := PollOption{
+		Name: "Option3",
+		Vote: 1,
+	}
+
+	m := make(map[int]PollOption)
+	m[1] = option1
+	m[2] = option2
+	m[3] = option3
+
+	inputPoll := Poll{
+		Title:       "My Poll",
+		PollOptions: m,
+		Attachment:  slack.Attachment{},
+		Buttons:     []slack.AttachmentAction{},
+	}
+
+	output := GetOptionsString(inputPoll)
+	expectedOutput := ":one: Option1 :vote1:\n\n:two: Option2 :vote2:\n\n:three: Option3 :vote1:\n\n"
+	if output != expectedOutput {
+		t.Errorf("Options did not process appropriately, got:\n%s\nwant:\n%s", output, expectedOutput)
+
+	}
+}
+func TestOptionTextBuiderContainingZeroVotes(t *testing.T) {
+	option1 := PollOption{
+		Name: "Option1",
+		Vote: 1,
+	}
+	option2 := PollOption{
+		Name: "Option2",
+		Vote: 0,
+	}
+	option3 := PollOption{
+		Name: "Option3",
+		Vote: 1,
+	}
+
+	m := make(map[int]PollOption)
+	m[1] = option1
+	m[2] = option2
+	m[3] = option3
+
+	inputPoll := Poll{
+		Title:       "My Poll",
+		PollOptions: m,
+		Attachment:  slack.Attachment{},
+		Buttons:     []slack.AttachmentAction{},
+	}
+
+	output := GetOptionsString(inputPoll)
+	expectedOutput := ":one: Option1 :vote1:\n\n:two: Option2\n\n:three: Option3 :vote1:\n\n"
+	if output != expectedOutput {
+		t.Errorf("Options did not process appropriately, got:\n%s\nwant:\n%s", output, expectedOutput)
+
 	}
 }

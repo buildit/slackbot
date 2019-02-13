@@ -18,20 +18,6 @@ import (
 var api = slack.New(config.Env.OauthToken)
 var slackPoll = poll.Poll{}
 
-func responseMessage(w http.ResponseWriter, original slack.Message, title, value string) {
-	original.Attachments[0].Actions = []slack.AttachmentAction{} // empty buttons
-	original.Attachments[0].Fields = []slack.AttachmentField{
-		{
-			Title: title,
-			Value: value,
-			Short: false,
-		},
-	}
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&original)
-}
-
 func ListenAndServeSlash(w http.ResponseWriter, r *http.Request) {
 	s, err := slack.SlashCommandParse(r)
 	if err != nil {
@@ -61,10 +47,10 @@ func ListenAndServeSlash(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[ERROR] Polling only supports up to 10 options \n")
 			w.WriteHeader(http.StatusInternalServerError)
 		}
-
+		//TODO: Need to handle correlationIDs for multiple channel/parallel poll support.
 		slackPoll = poll.CreatePoll(slicedParams)
 
-		channelID, timestamp, err := api.PostMessage(s.ChannelID, slack.MsgOptionText(slicedParams[0], false), slack.MsgOptionAttachments(slackPoll.Attachment))
+		channelID, timestamp, err := api.PostMessage(s.ChannelID, slack.MsgOptionText(slackPoll.Title, false), slack.MsgOptionAttachments(slackPoll.Attachment))
 
 		if err != nil {
 			fmt.Printf("%s\n", err)
@@ -86,7 +72,7 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[ERROR] Failed to unescape request body: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	var message slack.AttachmentActionCallback
+	var message slack.InteractionCallback
 	if err := json.Unmarshal([]byte(jsonStr), &message); err != nil {
 		log.Printf("[ERROR] Failed to decode json message from slack: %s", jsonStr)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -104,9 +90,40 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 
 	switch callbackType {
 	case "poll":
+
+		action := message.Actions[0]
+
+		if action.Name == "actionCancel" {
+			fmt.Println("Cancel Poll was selected")
+			slackPoll = poll.ClearPoll(message.User.Name, slackPoll)
+
+			channelID, timestamp, text, err := api.UpdateMessage(message.Channel.ID, message.MessageTs, slack.MsgOptionText(slackPoll.Title, false), slack.MsgOptionAttachments(slackPoll.Attachment))
+			if err != nil {
+				fmt.Printf("%s\n", err)
+				return
+			}
+			fmt.Printf("Poll '%s' successfully sent to channel %s at %s. Reponse with text %s \n", slackPoll.Title, channelID, timestamp, text)
+		} else { //It's a vote calllback
+			slackPoll = poll.AddVote(slackPoll, message.User.Name, message.Actions[0].Text, message.Actions[0].Value)
+		}
+
+		fmt.Println("Options and their current Votes:")
+		for _, option := range slackPoll.PollOptions {
+			fmt.Printf("%s  Votes=%d Voters=%s\n", option.Name, option.Vote, option.Voters)
+		}
+		//Update Attachment text to ensure it reflects current votes
+		slackPoll.Attachment.Text = poll.GetOptionsString(slackPoll)
+
+		channelID, timestamp, text, err := api.UpdateMessage(message.Channel.ID, message.MessageTs, slack.MsgOptionText(slackPoll.Attachment.Title, false), slack.MsgOptionAttachments(slackPoll.Attachment))
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
+		fmt.Printf("Poll '%s' successfully sent to channel %s at %s. Reponse with text %s \n", slackPoll.Title, channelID, timestamp, text)
 	}
 
 }
+
 func ListenAndServeEvents(w http.ResponseWriter, r *http.Request) {
 
 	buf := new(bytes.Buffer)

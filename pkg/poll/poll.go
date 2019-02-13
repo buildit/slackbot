@@ -2,65 +2,60 @@ package poll
 
 import (
 	"fmt"
+	"github.com/buildit/slackbot/pkg/util"
 	"github.com/nlopes/slack"
 	"log"
 	"strconv"
 )
 
-type Vote struct {
-	SelectedOption string
-	Voted          bool
-}
-
 type Poll struct {
-	Title      string
-	Options    []string
-	Attachment slack.Attachment
+	Title       string
+	PollOptions map[int]*PollOption
+	Attachment  slack.Attachment
+	Buttons     []slack.AttachmentAction
 }
 
-var votes map[string]Vote
-
-var NumberToWord = map[int]string{
-	1:  "one",
-	2:  "two",
-	3:  "three",
-	4:  "four",
-	5:  "five",
-	6:  "six",
-	7:  "seven",
-	8:  "eight",
-	9:  "nine",
-	10: "ten",
+type PollOption struct {
+	Name   string
+	Vote   int
+	Voters []string
 }
 
-func AddVote(name string, currentVote Vote) {
-	votes[name] = currentVote
-}
-
-func VoteWasCast(name string) bool {
-	if votes[name].Voted {
-		return true
+func GetOptionsString(myPoll Poll) string {
+	//TODO: Need to determine a way to post the options and votes without using emojis/reactions as below.  This requires anyone using the app to ensure their app has the emojis installed.
+	formattedOptions := ""
+	for i, option := range myPoll.PollOptions {
+		if option.Vote < 1 {
+			formattedOptions = formattedOptions + fmt.Sprintf(":%s: %s\n\n", util.ConvertNumToString(i), option.Name)
+		} else {
+			formattedOptions = formattedOptions + fmt.Sprintf(":%s: %s :vote%d:\n\n", util.ConvertNumToString(i), option.Name, option.Vote)
+		}
 	}
-	return false
+	return formattedOptions
 }
 
-//Convert an integer value 1-10 to the string equivalent
-func convert1to10(n int) (w string) {
-	if n < 20 {
-		w = NumberToWord[n]
-		return
+func AddVote(poll Poll, name string, option string, optionNumber string) Poll {
+	num, err := strconv.Atoi(optionNumber)
+
+	if err != nil {
+		log.Printf("Unable to add vote due to error: %s", err)
+		return poll
 	}
 
-	r := n % 10
-	if r == 0 {
-		w = NumberToWord[n]
-	} else {
-		w = NumberToWord[n-r] + "-" + NumberToWord[r]
+	//Remove votes from option already voted against before adding/changing a vote
+	for _, option := range poll.PollOptions {
+		if util.Contains(option.Voters, name) {
+			util.Remove(option.Voters, name)
+			option.Vote = len(option.Voters)
+		}
+
 	}
-	return
+	poll.PollOptions[num].Voters = append(poll.PollOptions[num].Voters, name)
+	poll.PollOptions[num].Vote = len(poll.PollOptions[num].Voters)
+	return poll
 }
 
-//Normailize the text being used to create a poll. (ex.  Slack will respond text using Smart quotes, etc).
+//Normalize the text being used to create a poll. (ex.  Slack will respond text using Smart quotes, etc).
 func Normalize(in rune) rune {
 	switch in {
 	case '“', '‹', '”', '›':
@@ -76,6 +71,7 @@ func SplitParameters(inputString string) []string {
 	pos := 0
 	quoted := false
 
+	//Creates a slice of strings. Anything within double quotes is treated as a single string
 	for i, c := range inputString {
 		switch c {
 		case '"':
@@ -112,21 +108,39 @@ func removeWrappedQuotes(inputString []string) []string {
 	return newout
 }
 
-func CreatePoll(slicedParams []string) Poll {
+func ClearPoll(user string, mypoll Poll) Poll {
+	mypoll.Buttons = []slack.AttachmentAction{}
+	mypoll.Attachment = slack.Attachment{
+		Title: fmt.Sprintf(":x: %s cancelled request for poll", user),
+	}
+	mypoll.PollOptions = map[int]*PollOption{}
+	mypoll.Title = ""
 
-	attachedOptions := []slack.AttachmentAction{}
-	var attachedOptionsText string
+	return mypoll
+}
+
+func CreatePoll(slicedParams []string) Poll {
+	newPoll := Poll{
+		Title:       slicedParams[0],
+		Buttons:     []slack.AttachmentAction{},
+		PollOptions: map[int]*PollOption{},
+	}
 	for i, value := range slicedParams {
 		if i > 0 { //processing options
 			option := slack.AttachmentAction{
 				Name:  value,
-				Text:  fmt.Sprintf(":%s: %s", convert1to10(i), value),
+				Text:  fmt.Sprintf(":%s:", util.ConvertNumToString(i)),
 				Type:  "button",
 				Style: "default",
 				Value: strconv.Itoa(i),
 			}
-			attachedOptions = append(attachedOptions, option)
-			attachedOptionsText = attachedOptionsText + fmt.Sprintf(":%s: %s \n", convert1to10(i), value)
+			//Add options to struct initialized with zero votes
+			newPoll.PollOptions[i] = &PollOption{
+				Name:   value,
+				Vote:   0,
+				Voters: []string{},
+			}
+			newPoll.Buttons = append(newPoll.Buttons, option)
 		}
 	}
 	option := slack.AttachmentAction{
@@ -136,20 +150,15 @@ func CreatePoll(slicedParams []string) Poll {
 		Style: "danger",
 		Value: "cancel",
 	}
-	attachedOptions = append(attachedOptions, option)
+	newPoll.Buttons = append(newPoll.Buttons, option)
 
 	var attachment = slack.Attachment{
-		Text:       attachedOptionsText,
+		Text:       GetOptionsString(newPoll),
 		Color:      "#f9a41b",
 		CallbackID: "poll",
-		Actions:    attachedOptions,
+		Actions:    newPoll.Buttons,
 	}
-
-	newPoll := Poll{
-		Title:      slicedParams[0],
-		Options:    slicedParams,
-		Attachment: attachment,
-	}
+	newPoll.Attachment = attachment
 
 	return newPoll
 }

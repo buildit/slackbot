@@ -1,6 +1,7 @@
 package poll
 
 import (
+	"github.com/buildit/slackbot/pkg/util"
 	"github.com/nlopes/slack"
 	"testing"
 )
@@ -38,10 +39,10 @@ func TestOptionTextBuider(t *testing.T) {
 		Vote: 1,
 	}
 
-	m := make(map[int]PollOption)
-	m[1] = option1
-	m[2] = option2
-	m[3] = option3
+	m := make(map[int]*PollOption)
+	m[1] = &option1
+	m[2] = &option2
+	m[3] = &option3
 
 	inputPoll := Poll{
 		Title:       "My Poll",
@@ -71,10 +72,10 @@ func TestOptionTextBuiderContainingZeroVotes(t *testing.T) {
 		Vote: 1,
 	}
 
-	m := make(map[int]PollOption)
-	m[1] = option1
-	m[2] = option2
-	m[3] = option3
+	m := make(map[int]*PollOption)
+	m[1] = &option1
+	m[2] = &option2
+	m[3] = &option3
 
 	inputPoll := Poll{
 		Title:       "My Poll",
@@ -89,4 +90,61 @@ func TestOptionTextBuiderContainingZeroVotes(t *testing.T) {
 		t.Errorf("Options did not process appropriately, got:\n%s\nwant:\n%s", output, expectedOutput)
 
 	}
+}
+
+func TestMultipleVoteProtection(t *testing.T) {
+	voters := []string{"tester1"}
+	option1 := PollOption{
+		Name:   "Option1",
+		Vote:   1,
+		Voters: voters,
+	}
+	option2 := PollOption{
+		Name: "Option2",
+		Vote: 0,
+	}
+	option3 := PollOption{
+		Name: "Option3",
+		Vote: 1,
+	}
+
+	m := make(map[int]*PollOption)
+	m[1] = &option1
+	m[2] = &option2
+	m[3] = &option3
+
+	inputPoll := Poll{
+		Title:       "My Poll",
+		PollOptions: m,
+		Attachment:  slack.Attachment{},
+		Buttons:     []slack.AttachmentAction{},
+	}
+
+	poll := AddVote(inputPoll, "tester1", "2")
+
+	if util.Contains(poll.PollOptions[1].Voters, "tester1") {
+		t.Errorf("Option contained name after voting on another option. %s contained Voters %s", poll.PollOptions[1].Name, poll.PollOptions[1].Voters)
+	}
+}
+
+func TestPollCreation(t *testing.T) {
+	input := `"My Poll Title" Option1 Option2 "Option 3"`
+
+	params := SplitParameters(input)
+
+	poll := CreatePoll(params)
+
+	if poll.Title != "My Poll Title" {
+		t.Errorf("Poll not instantiated corretly. Poll Title=%s And should Be %s", poll.Title, "My Poll Title")
+	}
+	if poll.PollOptions[1].Name != "Option1" {
+		t.Errorf("Poll not instantiated corretly. Poll Option1=%s And should Be %s", poll.PollOptions[1].Name, "Option1")
+	}
+	if poll.PollOptions[2].Name != "Option2" {
+		t.Errorf("Poll not instantiated corretly. Poll Option2=%s And should Be %s", poll.PollOptions[2].Name, "Option2")
+	}
+	if poll.PollOptions[3].Name != "Option 3" {
+		t.Errorf("Poll not instantiated corretly. Poll Option3=%s And should Be %s", poll.PollOptions[3].Name, "Option 3")
+	}
+
 }

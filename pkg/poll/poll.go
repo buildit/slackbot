@@ -5,6 +5,7 @@ import (
 	"github.com/buildit/slackbot/pkg/util"
 	"github.com/nlopes/slack"
 	"log"
+	"math/rand"
 	"strconv"
 )
 
@@ -13,6 +14,7 @@ type Poll struct {
 	PollOptions map[int]*PollOption
 	Attachment  slack.Attachment
 	Buttons     []slack.AttachmentAction
+	Identifier  string
 }
 
 type PollOption struct {
@@ -66,12 +68,11 @@ func Normalize(in rune) rune {
 	return in
 }
 
+//Creates a slice of strings. Anything within double quotes is treated as a single string
 func SplitParameters(inputString string) []string {
 	var out []string
 	pos := 0
 	quoted := false
-
-	//Creates a slice of strings. Anything within double quotes is treated as a single string
 	for i, c := range inputString {
 		switch c {
 		case '"':
@@ -108,7 +109,7 @@ func removeWrappedQuotes(inputString []string) []string {
 	return newout
 }
 
-func ClearPoll(user string, mypoll Poll) Poll {
+func CancelPoll(user string, mypoll Poll) Poll {
 	mypoll.Buttons = []slack.AttachmentAction{}
 	mypoll.Attachment = slack.Attachment{
 		Title: fmt.Sprintf(":x: %s cancelled request for poll", user),
@@ -120,10 +121,12 @@ func ClearPoll(user string, mypoll Poll) Poll {
 }
 
 func CreatePoll(slicedParams []string) Poll {
+	pollIdentifier := "poll-" + strconv.Itoa(rand.Intn(100))
 	newPoll := Poll{
 		Title:       slicedParams[0],
 		Buttons:     []slack.AttachmentAction{},
 		PollOptions: map[int]*PollOption{},
+		Identifier:  pollIdentifier,
 	}
 	for i, value := range slicedParams {
 		if i > 0 { //processing options
@@ -155,7 +158,7 @@ func CreatePoll(slicedParams []string) Poll {
 	var attachment = slack.Attachment{
 		Text:       GetOptionsString(newPoll),
 		Color:      "#f9a41b",
-		CallbackID: "poll",
+		CallbackID: pollIdentifier,
 		Actions:    newPoll.Buttons,
 	}
 	newPoll.Attachment = attachment

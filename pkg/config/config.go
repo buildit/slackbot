@@ -9,6 +9,7 @@ import (
 type Config struct {
 	VerificationToken string `envconfig:"SLACKBOT_VERIFICATIONTOKEN"`
 	OauthToken        string `envconfig:"SLACKBOT_OAUTHTOKEN"`
+	PollBucket        string `default:"POLL"`
 }
 
 var Env Config

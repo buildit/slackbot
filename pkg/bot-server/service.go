@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/buildit/slackbot/pkg/config"
+	"github.com/buildit/slackbot/pkg/database"
 	"github.com/buildit/slackbot/pkg/poll"
 	"github.com/nlopes/slack"
 	"github.com/nlopes/slack/slackevents"
@@ -47,8 +48,9 @@ func ListenAndServeSlash(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[ERROR] Polling only supports up to 10 options \n")
 			w.WriteHeader(http.StatusInternalServerError)
 		}
-		//TODO: Need to handle correlationIDs for multiple channel/parallel poll support.
 		slackPoll = poll.CreatePoll(slicedParams)
+
+		poll.AddPoll(database.DBCon, slackPoll.Identifier, slackPoll)
 
 		channelID, timestamp, err := api.PostMessage(s.ChannelID, slack.MsgOptionText(slackPoll.Title, false), slack.MsgOptionAttachments(slackPoll.Attachment))
 
@@ -61,6 +63,7 @@ func ListenAndServeSlash(w http.ResponseWriter, r *http.Request) {
 
 }
 func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
+	callbackType := ""
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("[ERROR] Failed to read request body: %s", err)
@@ -85,17 +88,21 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Printf("Received Message: %s \n", jsonStr)
-	callbackType := message.CallbackID
+	id := message.CallbackID
+	if strings.Contains(id, "poll") {
+		callbackType = "poll"
+	}
 	fmt.Printf("CallbackType: %s \n", callbackType)
 
 	switch callbackType {
 	case "poll":
 
 		action := message.Actions[0]
+		slackPoll, err = poll.GetPoll(database.DBCon, id)
 
 		if action.Name == "actionCancel" {
 			fmt.Println("Cancel Poll was selected")
-			slackPoll = poll.ClearPoll(message.User.Name, slackPoll)
+			slackPoll = poll.CancelPoll(message.User.Name, slackPoll)
 
 			channelID, timestamp, text, err := api.UpdateMessage(message.Channel.ID, message.MessageTs, slack.MsgOptionText(slackPoll.Title, false), slack.MsgOptionAttachments(slackPoll.Attachment))
 			if err != nil {
@@ -113,6 +120,9 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 		}
 		//Update Attachment text to ensure it reflects current votes
 		slackPoll.Attachment.Text = poll.GetOptionsString(slackPoll)
+
+		//Persist the Updated Poll
+		poll.AddPoll(database.DBCon, id, slackPoll)
 
 		channelID, timestamp, text, err := api.UpdateMessage(message.Channel.ID, message.MessageTs, slack.MsgOptionText(slackPoll.Attachment.Title, false), slack.MsgOptionAttachments(slackPoll.Attachment))
 		if err != nil {
@@ -147,6 +157,7 @@ func ListenAndServeEvents(w http.ResponseWriter, r *http.Request) {
 		innerEvent := eventsAPIEvent.InnerEvent
 		switch ev := innerEvent.Data.(type) {
 		case *slackevents.AppMentionEvent:
+			//TODO: Add initial  event support to allow someone to ask Miles for Help on supported comamnds
 			channelID, timeStamp, _ := api.PostMessage(ev.Channel, slack.MsgOptionText("Hello", false))
 			fmt.Printf("Message successfully sent to channel %s at %s", channelID, timeStamp)
 		}

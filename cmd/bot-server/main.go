@@ -11,6 +11,7 @@ import (
 
 // main function to boot up everything
 func main() {
+
 	var err error
 	database.DBCon, err = database.OpenWrite()
 	if err != nil {

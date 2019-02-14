@@ -25,6 +25,19 @@ func AddPoll(db *bbolt.DB, id string, poll Poll) error {
 	fmt.Printf("Successfully persisted Poll ID=%s to Bolt\n", id)
 	return err
 }
+func DeletePoll(db *bbolt.DB, id string) error {
+	var err error
+
+	err = db.Update(func(tx *bbolt.Tx) error {
+		err = tx.Bucket([]byte("DB")).Bucket(pollBucket).Delete([]byte(id))
+		if err != nil {
+			return fmt.Errorf("could not set config: %v", err)
+		}
+		return nil
+	})
+	fmt.Printf("Successfully Deleted Poll ID=%s from Bolt\n", id)
+	return err
+}
 
 func GetPoll(db *bbolt.DB, id string) (Poll, error) {
 	var err error

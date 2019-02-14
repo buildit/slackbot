@@ -11,13 +11,19 @@ import (
 	"github.com/nlopes/slack/slackevents"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 var api = slack.New(config.Env.OauthToken)
 var slackPoll = poll.Poll{}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func ListenAndServeSlash(w http.ResponseWriter, r *http.Request) {
 	s, err := slack.SlashCommandParse(r)
@@ -58,12 +64,11 @@ func ListenAndServeSlash(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("%s\n", err)
 			return
 		}
-		fmt.Printf("Poll '%s' successfully sent to channel %s at %s \n", slackPoll.Title, channelID, timestamp)
+		fmt.Printf("Poll '%s' successfully created on channel %s at %s \n", slackPoll.Identifier, channelID, timestamp)
 	}
 
 }
 func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
-	callbackType := ""
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("[ERROR] Failed to read request body: %s", err)
@@ -88,6 +93,8 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Printf("Received Message: %s \n", jsonStr)
+
+	callbackType := ""
 	id := message.CallbackID
 	if strings.Contains(id, "poll") {
 		callbackType = "poll"
@@ -97,9 +104,9 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 	switch callbackType {
 	case "poll":
 
-		action := message.Actions[0]
 		slackPoll, err = poll.GetPoll(database.DBCon, id)
 
+		action := message.Actions[0]
 		if action.Name == "actionCancel" {
 			fmt.Println("Cancel Poll was selected")
 			slackPoll = poll.CancelPoll(message.User.Name, slackPoll)
@@ -109,27 +116,27 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 				fmt.Printf("%s\n", err)
 				return
 			}
-			fmt.Printf("Poll '%s' successfully sent to channel %s at %s. Reponse with text %s \n", slackPoll.Title, channelID, timestamp, text)
+
+			poll.DeletePoll(database.DBCon, id)
+
+			fmt.Printf("Poll '%s' deleted on channel %s at %s. Reponse with text %s \n", slackPoll.Identifier, channelID, timestamp, text)
 		} else { //It's a vote calllback
-			slackPoll = poll.AddVote(slackPoll, message.User.Name, message.Actions[0].Text, message.Actions[0].Value)
+			slackPoll = poll.AddVote(slackPoll, message.User.Name, message.Actions[0].Value)
 		}
 
-		fmt.Println("Options and their current Votes:")
-		for _, option := range slackPoll.PollOptions {
-			fmt.Printf("%s  Votes=%d Voters=%s\n", option.Name, option.Vote, option.Voters)
-		}
 		//Update Attachment text to ensure it reflects current votes
 		slackPoll.Attachment.Text = poll.GetOptionsString(slackPoll)
 
 		//Persist the Updated Poll
 		poll.AddPoll(database.DBCon, id, slackPoll)
 
+		//Update the poll in Slack
 		channelID, timestamp, text, err := api.UpdateMessage(message.Channel.ID, message.MessageTs, slack.MsgOptionText(slackPoll.Attachment.Title, false), slack.MsgOptionAttachments(slackPoll.Attachment))
 		if err != nil {
 			fmt.Printf("%s\n", err)
 			return
 		}
-		fmt.Printf("Poll '%s' successfully sent to channel %s at %s. Reponse with text %s \n", slackPoll.Title, channelID, timestamp, text)
+		fmt.Printf("Poll '%s' successfully sent to channel %s at %s. Reponse with text %s \n", slackPoll.Identifier, channelID, timestamp, text)
 	}
 
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/buildit/slackbot/pkg/config"
 	"go.etcd.io/bbolt"
+	"log"
 )
 
 var pollBucket = []byte(config.Env.PollBucket)
@@ -22,7 +23,7 @@ func AddPoll(db *bbolt.DB, id string, poll Poll) error {
 		}
 		return nil
 	})
-	fmt.Printf("Successfully persisted Poll ID=%s to Bolt\n", id)
+	log.Printf("Successfully persisted Poll ID=%s to Bolt\n", id)
 	return err
 }
 func DeletePoll(db *bbolt.DB, id string) error {
@@ -35,7 +36,7 @@ func DeletePoll(db *bbolt.DB, id string) error {
 		}
 		return nil
 	})
-	fmt.Printf("Successfully Deleted Poll ID=%s from Bolt\n", id)
+	log.Printf("Successfully Deleted Poll ID=%s from Bolt\n", id)
 	return err
 }
 
@@ -52,6 +53,6 @@ func GetPoll(db *bbolt.DB, id string) (Poll, error) {
 
 		return nil
 	})
-	fmt.Printf("Successfully retrieved Poll ID=%s from Bolt\n", id)
+	log.Printf("Successfully retrieved Poll ID=%s from Bolt\n", id)
 	return retrievedPoll, err
 }

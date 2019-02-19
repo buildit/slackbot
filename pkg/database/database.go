@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/buildit/slackbot/pkg/config"
 	"go.etcd.io/bbolt"
+	"log"
 )
 
 var (
@@ -41,6 +42,6 @@ func openDB(readOnly bool) (*bbolt.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not set up buckets, %v", err)
 	}
-	fmt.Println("DB Setup Done")
+	log.Println("DB Setup Done")
 	return db, nil
 }

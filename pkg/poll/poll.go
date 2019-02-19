@@ -12,13 +12,13 @@ import (
 
 type Poll struct {
 	Title       string
-	PollOptions map[int]*PollOption
+	PollOptions map[int]*Option
 	Attachment  slack.Attachment
 	Buttons     []slack.AttachmentAction
 	Identifier  string
 }
 
-type PollOption struct {
+type Option struct {
 	Name   string
 	Vote   int
 	Voters []string
@@ -122,9 +122,9 @@ func removeWrappedQuotes(inputString []string) []string {
 func CancelPoll(user string, mypoll Poll) Poll {
 	mypoll.Buttons = []slack.AttachmentAction{}
 	mypoll.Attachment = slack.Attachment{
-		Title: fmt.Sprintf(":x: %s cancelled request for poll", user),
+		Title: fmt.Sprintf(":x: %s cancelled the request to conduct a poll", user),
 	}
-	mypoll.PollOptions = map[int]*PollOption{}
+	mypoll.PollOptions = map[int]*Option{}
 	mypoll.Title = ""
 
 	return mypoll
@@ -135,7 +135,7 @@ func CreatePoll(slicedParams []string) Poll {
 	newPoll := Poll{
 		Title:       slicedParams[0],
 		Buttons:     []slack.AttachmentAction{},
-		PollOptions: map[int]*PollOption{},
+		PollOptions: map[int]*Option{},
 		Identifier:  pollIdentifier,
 	}
 	for i, value := range slicedParams {
@@ -148,7 +148,7 @@ func CreatePoll(slicedParams []string) Poll {
 				Value: strconv.Itoa(i),
 			}
 			//Add options to struct initialized with zero votes
-			newPoll.PollOptions[i] = &PollOption{
+			newPoll.PollOptions[i] = &Option{
 				Name:   value,
 				Vote:   0,
 				Voters: []string{},

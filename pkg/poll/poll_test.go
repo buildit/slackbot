@@ -26,20 +26,20 @@ func TestSplitParameters(t *testing.T) {
 }
 
 func TestOptionTextBuider(t *testing.T) {
-	option1 := PollOption{
+	option1 := Option{
 		Name: "Option1",
 		Vote: 1,
 	}
-	option2 := PollOption{
+	option2 := Option{
 		Name: "Option2",
 		Vote: 2,
 	}
-	option3 := PollOption{
+	option3 := Option{
 		Name: "Option3",
 		Vote: 1,
 	}
 
-	m := make(map[int]*PollOption)
+	m := make(map[int]*Option)
 	m[1] = &option1
 	m[2] = &option2
 	m[3] = &option3
@@ -59,20 +59,20 @@ func TestOptionTextBuider(t *testing.T) {
 	}
 }
 func TestOptionTextBuiderContainingZeroVotes(t *testing.T) {
-	option1 := PollOption{
+	option1 := Option{
 		Name: "Option1",
 		Vote: 1,
 	}
-	option2 := PollOption{
+	option2 := Option{
 		Name: "Option2",
 		Vote: 0,
 	}
-	option3 := PollOption{
+	option3 := Option{
 		Name: "Option3",
 		Vote: 1,
 	}
 
-	m := make(map[int]*PollOption)
+	m := make(map[int]*Option)
 	m[1] = &option1
 	m[2] = &option2
 	m[3] = &option3
@@ -94,21 +94,21 @@ func TestOptionTextBuiderContainingZeroVotes(t *testing.T) {
 
 func TestMultipleVoteProtection(t *testing.T) {
 	voters := []string{"tester1"}
-	option1 := PollOption{
+	option1 := Option{
 		Name:   "Option1",
 		Vote:   1,
 		Voters: voters,
 	}
-	option2 := PollOption{
+	option2 := Option{
 		Name: "Option2",
 		Vote: 0,
 	}
-	option3 := PollOption{
+	option3 := Option{
 		Name: "Option3",
 		Vote: 1,
 	}
 
-	m := make(map[int]*PollOption)
+	m := make(map[int]*Option)
 	m[1] = &option1
 	m[2] = &option2
 	m[3] = &option3

@@ -60,8 +60,8 @@ func AddVote(poll Poll, name string, optionNumber string) Poll {
 			option.Voters = util.Remove(option.Voters, name)
 			option.Vote = len(option.Voters)
 		}
-
 	}
+
 	poll.PollOptions[num].Voters = append(poll.PollOptions[num].Voters, name)
 	poll.PollOptions[num].Vote = len(poll.PollOptions[num].Voters)
 	return poll

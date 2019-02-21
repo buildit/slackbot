@@ -9,6 +9,7 @@ WORKDIR $GOPATH/src/github.com/buildit/slackbot
 ADD . $GOPATH/src/github.com/buildit/slackbot/
 RUN go get -d -v ./...
 RUN go build -v -o ${bin_dir}/bot-server.sh ./cmd/bot-server/main.go
+RUN go test ./...
 
 ############################
 # STAGE 2 Build small image with only binary

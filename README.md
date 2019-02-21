@@ -21,6 +21,7 @@ Once the app is running, Slack needs to be pointed at the running container. For
  - slash commands:  https://api.slack.com/apps/AG29FUH1U/slash-commands?  
  
  
- TODO: 
- 1)Need to host the application somewhere in the cloud.  
- 2)Add a help menu as we expand bot functionality and event processing. Currently if you mention the app (ex. @miles), the bot will just respond with "Hello"
+TODO: 
+
+1)Need to host the application somewhere in the cloud.  
+2)Add a help menu as we expand bot functionality and event processing. Currently if you mention the app (ex. @miles), the bot will just respond with "Hello"

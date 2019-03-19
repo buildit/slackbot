@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/buildit/slackbot/pkg/config"
 	"go.etcd.io/bbolt"
-	"log"
+	log "github.com/sirupsen/logrus"
 )
 
 var (

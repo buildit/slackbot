@@ -51,11 +51,11 @@ func ListenAndServeSlash(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Poll Submission detected with Message Paramters:%q", slicedParams)
 
 		if len(slicedParams) < 1 {
-			log.Printf("[ERROR] No Topic Provided for the submitted poll")
+			log.Error("No Topic Provided for the submitted poll")
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		if len(slicedParams) > 10 {
-			log.Printf("[ERROR] Polling only supports up to 10 options")
+			log.Error("Polling only supports up to 10 options")
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		slackPoll = poll.CreatePoll(slicedParams)
@@ -75,23 +75,23 @@ func ListenAndServeSlash(w http.ResponseWriter, r *http.Request) {
 func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("[ERROR] Failed to read request body: %s", err)
+		log.Error("Failed to read request body: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	jsonStr, err := url.QueryUnescape(string(buf)[8:])
 	if err != nil {
-		log.Printf("[ERROR] Failed to unescape request body: %s", err)
+		log.Error("Failed to unescape request body: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	var message slack.InteractionCallback
 	if err := json.Unmarshal([]byte(jsonStr), &message); err != nil {
-		log.Printf("[ERROR] Failed to decode json message from slack: %s", jsonStr)
+		log.Error("Failed to decode json message from slack: %s", jsonStr)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	// Only accept message from slack with valid token
 	if message.Token != config.Env.VerificationToken {
-		log.Printf("[ERROR] Invalid token: %s", message.Token)
+		log.Error("Invalid token: %s", message.Token)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

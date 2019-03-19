@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/buildit/slackbot/pkg/config"
-	"go.etcd.io/bbolt"
 	log "github.com/sirupsen/logrus"
+	"go.etcd.io/bbolt"
 )
 
 var pollBucket = []byte(config.Env.PollBucket)

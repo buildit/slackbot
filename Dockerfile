@@ -12,7 +12,7 @@ RUN go get -d -v ./...
 RUN go get -u github.com/jstemmer/go-junit-report
 RUN mkdir /go/TestResults
 RUN go test -v ./... | go-junit-report > /go/TestResults/TestReport.xml
-RUN GOOS=linux GOARCH=amd64 go build -v -o /go/bin/bot-server.sh ./cmd/bot-server/main.go
+RUN GOOS=linux GOARCH=amd64 go build -v -o /go/bin/bot-server ./cmd/bot-server/main.go
 
 ############################
 # STAGE 2 Upload test results to Azure
@@ -47,5 +47,5 @@ RUN azcopy \
 FROM alpine:3.9 AS final
 EXPOSE 4390
 RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
-COPY --from=builder /go/bin/bot-server.sh /go/bin/bot-server.sh
-ENTRYPOINT ["/go/bin/bot-server.sh"]
+COPY --from=builder /go/bin/bot-server /go/bin/bot-server
+ENTRYPOINT ["/go/bin/bot-server"]

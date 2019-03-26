@@ -20,14 +20,14 @@ var Env Config
 var AppInsights AppInsightsConfig
 
 func init() {
-	err := envconfig.Process("slackbot", &Env)
+	err := envconfig.Process("appsetting_slackbot", &Env)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 }
 
 func init() {
-	err := envconfig.Process("appinsights", &AppInsights)
+	err := envconfig.Process("appsetting_appinsights", &AppInsights)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

@@ -1,25 +1,24 @@
-
 ############################
 # STAGE 1 build Golang executable binary
 ############################
 
 FROM golang:1.12.1-alpine AS builder
-ENV bin_dir=/go/bin/
-RUN apk update && apk add --no-cache openssl openssh curl bash git openssh libcurl
+#https://github.com/golang/go/issues/28065
+ENV CGO_ENABLED=0
+RUN apk update && apk add --no-cache ca-certificates openssl openssh curl bash git && update-ca-certificates
 WORKDIR $GOPATH/src/github.com/buildit/slackbot
 ADD . $GOPATH/src/github.com/buildit/slackbot/
 RUN go get -d -v ./...
-RUN go build -v -o ${bin_dir}/bot-server.sh ./cmd/bot-server/main.go
 RUN go get -u github.com/jstemmer/go-junit-report
 RUN mkdir /go/TestResults
 RUN go test -v ./... | go-junit-report > /go/TestResults/TestReport.xml
-
+RUN GOOS=linux GOARCH=amd64 go build -v -o /go/bin/bot-server.sh ./cmd/bot-server/main.go
 
 ############################
 # STAGE 2 Upload test results to Azure
 ############################
 
-FROM microsoft/dotnet:latest as tester
+FROM microsoft/dotnet:latest AS tester
 
 ARG STORAGE_ACCT_URL
 ARG STORAGE_ACCT_KEY
@@ -45,8 +44,8 @@ RUN azcopy \
 # STAGE 3 Build small image with only binary
 ############################
 
-FROM golang:1.12.1-alpine
-ENV bin_dir=/go/bin/
-COPY --from=builder ${bin_dir}/bot-server.sh /go/bin/bot-server.sh
-RUN cd ${bin_dir} && ls
+FROM alpine:3.9 AS final
+EXPOSE 4390
+RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
+COPY --from=builder /go/bin/bot-server.sh /go/bin/bot-server.sh
 ENTRYPOINT ["/go/bin/bot-server.sh"]

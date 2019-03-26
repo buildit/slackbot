@@ -8,8 +8,8 @@ import (
 	"github.com/buildit/slackbot/pkg/poll"
 	"github.com/nlopes/slack"
 	"github.com/nlopes/slack/slackevents"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -26,6 +26,12 @@ func init() {
 
 func ListenAndServeHome(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello from the slackbot"))
+	return
+}
+
+func ListenAndServeError(w http.ResponseWriter, r *http.Request) {
+	log.Error("/error endpoint hit")
+	w.Write([]byte("Error logged from the slackbot"))
 	return
 }
 
@@ -48,14 +54,14 @@ func ListenAndServeSlash(w http.ResponseWriter, r *http.Request) {
 		params := &slack.Msg{Text: s.Text}
 		normalizedParams := strings.Map(poll.Normalize, params.Text)
 		slicedParams := poll.SplitParameters(normalizedParams)
-		log.Printf("Poll Submission detected with Message Paramters:%q\n", slicedParams)
+		log.Printf("Poll Submission detected with Message Paramters:%q", slicedParams)
 
 		if len(slicedParams) < 1 {
-			log.Printf("[ERROR] No Topic Provided for the submitted poll \n")
+			log.Error("No Topic Provided for the submitted poll")
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		if len(slicedParams) > 10 {
-			log.Printf("[ERROR] Polling only supports up to 10 options \n")
+			log.Error("Polling only supports up to 10 options")
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		slackPoll = poll.CreatePoll(slicedParams)
@@ -65,45 +71,45 @@ func ListenAndServeSlash(w http.ResponseWriter, r *http.Request) {
 		channelID, timestamp, err := api.PostMessage(s.ChannelID, slack.MsgOptionText(slackPoll.Title, false), slack.MsgOptionAttachments(slackPoll.Attachment))
 
 		if err != nil {
-			log.Printf("%s\n", err)
+			log.Printf("%s", err)
 			return
 		}
-		log.Printf("Poll '%s' successfully created on channel %s at %s \n", slackPoll.Identifier, channelID, timestamp)
+		log.Printf("Poll '%s' successfully created on channel %s at %s", slackPoll.Identifier, channelID, timestamp)
 	}
 
 }
 func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("[ERROR] Failed to read request body: %s", err)
+		log.Errorf("Failed to read request body: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	jsonStr, err := url.QueryUnescape(string(buf)[8:])
 	if err != nil {
-		log.Printf("[ERROR] Failed to unescape request body: %s", err)
+		log.Errorf("Failed to unescape request body: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	var message slack.InteractionCallback
 	if err := json.Unmarshal([]byte(jsonStr), &message); err != nil {
-		log.Printf("[ERROR] Failed to decode json message from slack: %s", jsonStr)
+		log.Errorf("Failed to decode json message from slack: %s", jsonStr)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	// Only accept message from slack with valid token
 	if message.Token != config.Env.VerificationToken {
-		log.Printf("[ERROR] Invalid token: %s", message.Token)
+		log.Errorf("Invalid token: %s", message.Token)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	log.Printf("Received Message: %s \n", jsonStr)
+	log.Printf("Received Message: %s", jsonStr)
 
 	callbackType := ""
 	id := message.CallbackID
 	if strings.Contains(id, "poll") {
 		callbackType = "poll"
 	}
-	log.Printf("CallbackType: %s \n", callbackType)
+	log.Printf("CallbackType: %s", callbackType)
 
 	switch callbackType {
 	case "poll":
@@ -117,13 +123,13 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 
 			channelID, timestamp, text, err := api.UpdateMessage(message.Channel.ID, message.MessageTs, slack.MsgOptionText(slackPoll.Title, false), slack.MsgOptionAttachments(slackPoll.Attachment))
 			if err != nil {
-				log.Printf("%s\n", err)
+				log.Printf("%s", err)
 				return
 			}
 
 			poll.DeletePoll(database.DBCon, id)
 
-			log.Printf("Poll '%s' deleted on channel %s at %s. Reponse with text %s \n", slackPoll.Identifier, channelID, timestamp, text)
+			log.Printf("Poll '%s' deleted on channel %s at %s. Response with text %s", slackPoll.Identifier, channelID, timestamp, text)
 		} else { //It's a vote calllback
 			slackPoll = poll.AddVote(slackPoll, message.User.Name, message.Actions[0].Value)
 		}
@@ -137,10 +143,10 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 		//Update the poll in Slack
 		channelID, timestamp, text, err := api.UpdateMessage(message.Channel.ID, message.MessageTs, slack.MsgOptionText(slackPoll.Attachment.Title, false), slack.MsgOptionAttachments(slackPoll.Attachment))
 		if err != nil {
-			log.Printf("%s\n", err)
+			log.Printf("%s", err)
 			return
 		}
-		log.Printf("Poll '%s' successfully sent to channel %s at %s. Reponse with text %s \n", slackPoll.Identifier, channelID, timestamp, text)
+		log.Printf("Poll '%s' successfully sent to channel %s at %s. Response with text %s", slackPoll.Identifier, channelID, timestamp, text)
 	}
 
 }

@@ -123,7 +123,7 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 
 			poll.DeletePoll(database.DBCon, id)
 
-			log.Printf("Poll '%s' deleted on channel %s at %s. Reponse with text %s", slackPoll.Identifier, channelID, timestamp, text)
+			log.Printf("Poll '%s' deleted on channel %s at %s. Response with text %s", slackPoll.Identifier, channelID, timestamp, text)
 		} else { //It's a vote calllback
 			slackPoll = poll.AddVote(slackPoll, message.User.Name, message.Actions[0].Value)
 		}
@@ -140,7 +140,7 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 			log.Printf("%s", err)
 			return
 		}
-		log.Printf("Poll '%s' successfully sent to channel %s at %s. Reponse with text %s", slackPoll.Identifier, channelID, timestamp, text)
+		log.Printf("Poll '%s' successfully sent to channel %s at %s. Response with text %s", slackPoll.Identifier, channelID, timestamp, text)
 	}
 
 }

@@ -2,9 +2,9 @@ package main
 
 import (
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
-	"github.com/buildit/slackbot/pkg/ai"
 	"github.com/buildit/slackbot/pkg/config"
 	"github.com/buildit/slackbot/pkg/database"
+	"github.com/buildit/slackbot/pkg/ai"
 	"github.com/buildit/slackbot/pkg/service"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"

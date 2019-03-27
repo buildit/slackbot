@@ -1,7 +1,7 @@
 ############################
 # STAGE 1 execute Golang end to end integration tests
 ############################
-FROM golang:1.12.1-stretch AS builder
+FROM golang:1.12.1-stretch AS tester
 ARG SLACKBOT_HELLO_URL
 WORKDIR $GOPATH/src/github.com/buildit/slackbot
 ADD . $GOPATH/src/github.com/buildit/slackbot/

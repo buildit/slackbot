@@ -9,7 +9,7 @@ import "os"
 
 func TestE2ESlackbotHelloWorldMessage(t *testing.T) {
 	// Call the slackbot end point.
-	helloWorldUrl := os.Getenv("SLACKBOT_HELLO_URL")
+	helloWorldUrl := os.Getenv("APP_URL")
 	httpResponse, err := http.Get(helloWorldUrl)
 	if err != nil {
 		panic(err)

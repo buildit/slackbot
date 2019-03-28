@@ -2,13 +2,13 @@
 # STAGE 1 execute Golang end to end integration tests
 ############################
 FROM golang:1.12.1-stretch AS tester
-ARG SLACKBOT_HELLO_URL
+ARG APP_URL
 WORKDIR $GOPATH/src/github.com/buildit/slackbot
 ADD . $GOPATH/src/github.com/buildit/slackbot/
 RUN go get -d -v ./...
 RUN go get -u github.com/jstemmer/go-junit-report
 RUN mkdir /go/TestResults
-RUN export SLACKBOT_HELLO_URL=${SLACKBOT_HELLO_URL}
+RUN export APP_URL=${APP_URL}
 RUN go test -v ./... -tags e2e_tests | go-junit-report > /go/TestResults/TestReport.xml 
 
 ############################

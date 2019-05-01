@@ -38,6 +38,7 @@ RUN azcopy \
      --source ./TestReport.xml \
      --destination "${STORAGE_ACCT_URL}/TestReport_${BUILD_NUMBER}.xml" \
      --dest-key "${STORAGE_ACCT_KEY}"
+     --dest-type blob
 
 
 ############################

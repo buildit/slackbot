@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/buildit/slackbot/pkg/config"
 	"github.com/buildit/slackbot/pkg/database"
 	"github.com/buildit/slackbot/pkg/ai"

@@ -2,7 +2,7 @@
 # STAGE 1 build Golang executable binary
 ############################
 
-FROM golang:1.12.1-alpine AS builder
+FROM golang:1.12.5-alpine AS builder
 #https://github.com/golang/go/issues/28065
 ENV CGO_ENABLED=0
 RUN apk update && apk add --no-cache ca-certificates openssl openssh curl bash git && update-ca-certificates

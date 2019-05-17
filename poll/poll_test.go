@@ -3,7 +3,7 @@
 package poll
 
 import (
-	"github.com/buildit/slackbot/pkg/util"
+	"github.com/buildit/slackbot/util"
 	"github.com/nlopes/slack"
 	"testing"
 )

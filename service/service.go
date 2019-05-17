@@ -3,9 +3,9 @@ package service
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/buildit/slackbot/pkg/config"
-	"github.com/buildit/slackbot/pkg/database"
-	"github.com/buildit/slackbot/pkg/poll"
+	"github.com/buildit/slackbot/config"
+	"github.com/buildit/slackbot/database"
+	"github.com/buildit/slackbot/poll"
 	"github.com/nlopes/slack"
 	"github.com/nlopes/slack/slackevents"
 	log "github.com/sirupsen/logrus"
@@ -116,7 +116,7 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 
 		slackPoll, err = poll.GetPoll(database.DBCon, id)
 
-		action := message.ActionCallback.AttachmentActions[0]
+		action := message.Actions[0]
 		if action.Name == "actionCancel" {
 			log.Println("Cancel Poll was selected")
 			slackPoll = poll.CancelPoll(message.User.Name, slackPoll)
@@ -131,7 +131,7 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 
 			log.Printf("Poll '%s' deleted on channel %s at %s. Response with text %s", slackPoll.Identifier, channelID, timestamp, text)
 		} else { //It's a vote calllback
-			slackPoll = poll.AddVote(slackPoll, message.User.Name, message.ActionCallback.AttachmentActions[0].Value)
+			slackPoll = poll.AddVote(slackPoll, message.User.Name, message.Actions[0].Value)
 		}
 
 		//Update Attachment text to ensure it reflects current votes

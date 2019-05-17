@@ -3,8 +3,8 @@ package ai
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/microsoft/ApplicationInsights-Go/appinsights"
-	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
+	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
+	"github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -3,7 +3,7 @@ package poll
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/buildit/slackbot/pkg/config"
+	"github.com/buildit/slackbot/config"
 	log "github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
 )

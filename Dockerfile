@@ -5,14 +5,18 @@
 FROM golang:1.12.1-alpine AS builder
 #https://github.com/golang/go/issues/28065
 ENV CGO_ENABLED=0
+ENV GO111MODULE=on
+
 RUN apk update && apk add --no-cache ca-certificates openssl openssh curl bash git && update-ca-certificates
-WORKDIR $GOPATH/src/github.com/buildit/slackbot
-ADD . $GOPATH/src/github.com/buildit/slackbot/
-RUN go get -d -v ./...
+RUN mkdir /slackbot && mkdir /slackbot/TestResults
+WORKDIR /slackbot
+COPY go.mod .
+COPY go.sum .
+RUN go mod download build
+COPY . .
 RUN go get -u github.com/jstemmer/go-junit-report
-RUN mkdir /go/TestResults
-RUN go test -v ./... -tags unit_tests | go-junit-report > /go/TestResults/TestReport.xml
-RUN GOOS=linux GOARCH=amd64 go build -v -o /go/bin/bot-server ./cmd/bot-server/main.go
+RUN go test -v ./... -tags unit_tests | go-junit-report > /slackbot/TestResults/TestReport.xml
+RUN GOOS=linux GOARCH=amd64 go build -v -o /slackbot/bot-server ./main.go
 
 ############################
 # STAGE 2 Upload test results to Azure
@@ -32,7 +36,7 @@ RUN mkdir /tmp/azcopy && \
 
 RUN rm -rf /tmp/azcopy
 
-COPY --from=builder /go/TestResults/TestReport.xml ./TestReport.xml
+COPY --from=builder /slackbotl/TestResults/TestReport.xml ./TestReport.xml
 
 RUN azcopy \
      --source ./TestReport.xml \
@@ -47,5 +51,5 @@ RUN azcopy \
 FROM alpine:3.9 AS final
 EXPOSE 4390
 RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
-COPY --from=builder /go/bin/bot-server /go/bin/bot-server
-ENTRYPOINT ["/go/bin/bot-server"]
+COPY --from=builder /slackbot/bot-server /slackbot/bot-server
+ENTRYPOINT ["/slackbot/bot-server"]

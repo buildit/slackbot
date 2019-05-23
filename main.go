@@ -32,6 +32,6 @@ func main() {
 	router.HandleFunc("/events", service.ListenAndServeEvents).Methods("POST")
 	router.HandleFunc("/slash", service.ListenAndServeSlash).Methods("POST")
 	router.HandleFunc("/interactions", service.ListenAndServeInteractions).Methods("POST")
-	log.Println("Server listening")
-	log.Fatal(http.ListenAndServe(":4390", router))
+	log.Printf("Server listening on port %s", config.Env.ListeningPort)
+	log.Fatal(http.ListenAndServe(":"+config.Env.ListeningPort, router))
 }

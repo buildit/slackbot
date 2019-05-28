@@ -1,0 +1,28 @@
+############################
+# STAGE 1 build Golang executable binary
+############################
+
+FROM golang:1.12.1-alpine AS builder
+#https://github.com/golang/go/issues/28065
+ENV CGO_ENABLED=0
+ENV GO111MODULE=on
+
+RUN apk update && apk add --no-cache ca-certificates openssl openssh curl bash git && update-ca-certificates
+RUN mkdir /slackbot && mkdir /slackbot/TestResults
+WORKDIR /slackbot
+COPY go.mod .
+COPY go.sum .
+RUN go mod download build
+COPY . .
+RUN go test -v ./... -tags unit_tests
+RUN GOOS=linux GOARCH=amd64 go build -v -o /slackbot/bot-server ./main.go
+
+############################
+# STAGE 2 Build small image with only binary
+############################
+
+FROM alpine:3.9 AS final
+EXPOSE 4390
+RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
+COPY --from=builder /slackbot/bot-server /slackbot/bot-server
+ENTRYPOINT ["/slackbot/bot-server"]

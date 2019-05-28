@@ -14,6 +14,7 @@ COPY . .
 
 RUN go get -u github.com/jstemmer/go-junit-report
 RUN export APP_URL=${APP_URL}
+RUN mkdir /slackbot/TestResults
 RUN go test -v ./... -tags e2e_tests | go-junit-report > /slackbot/TestResults/TestReport.xml
 
 ############################

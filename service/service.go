@@ -119,8 +119,6 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 
 		slackPoll, err = poll.GetPoll(database.DBCon, id)
 
-		log.Printf("Poll Retrieved from Bolt DB = %+v\n", slackPoll)
-
 		action := message.Actions[0]
 		if action.Name == "actionCancel" {
 			log.Println("Cancel Poll was selected")

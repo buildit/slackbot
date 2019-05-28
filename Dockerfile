@@ -2,7 +2,7 @@
 # STAGE 1 build Golang executable binary
 ############################
 
-FROM golang:1.12.1-alpine AS builder
+FROM golang:1.12.5-alpine AS builder
 #https://github.com/golang/go/issues/28065
 ENV CGO_ENABLED=0
 ENV GO111MODULE=on
@@ -36,12 +36,13 @@ RUN mkdir /tmp/azcopy && \
 
 RUN rm -rf /tmp/azcopy
 
-COPY --from=builder /slackbotl/TestResults/TestReport.xml ./TestReport.xml
+COPY --from=builder /slackbot/TestResults/TestReport.xml ./TestReport.xml
 
 RUN azcopy \
      --source ./TestReport.xml \
      --destination "${STORAGE_ACCT_URL}/TestReport_${BUILD_NUMBER}.xml" \
-     --dest-key "${STORAGE_ACCT_KEY}"
+     --dest-key "${STORAGE_ACCT_KEY}" \
+     --dest-type blob
 
 
 ############################

@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/microsoft/ApplicationInsights-Go/appinsights"
-	"github.com/buildit/slackbot/pkg/config"
-	"github.com/buildit/slackbot/pkg/database"
-	"github.com/buildit/slackbot/pkg/ai"
-	"github.com/buildit/slackbot/pkg/service"
+	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
+	"github.com/buildit/slackbot/ai"
+	"github.com/buildit/slackbot/config"
+	"github.com/buildit/slackbot/database"
+	"github.com/buildit/slackbot/service"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -32,6 +32,6 @@ func main() {
 	router.HandleFunc("/events", service.ListenAndServeEvents).Methods("POST")
 	router.HandleFunc("/slash", service.ListenAndServeSlash).Methods("POST")
 	router.HandleFunc("/interactions", service.ListenAndServeInteractions).Methods("POST")
-	log.Println("Server listening")
-	log.Fatal(http.ListenAndServe(":4390", router))
+	log.Printf("Server listening on port %s", config.Env.ListeningPort)
+	log.Fatal(http.ListenAndServe(":"+config.Env.ListeningPort, router))
 }

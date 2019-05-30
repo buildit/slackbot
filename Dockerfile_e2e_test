@@ -3,13 +3,19 @@
 ############################
 FROM golang:1.12.1-stretch AS tester
 ARG APP_URL
-WORKDIR $GOPATH/src/github.com/buildit/slackbot
-ADD . $GOPATH/src/github.com/buildit/slackbot/
-RUN go get -d -v ./...
+ENV GO111MODULE=on
+
+RUN mkdir /slackbot && mkdir /slackbot/TestResults && mkdir /slackbot/TestResults
+WORKDIR /slackbot
+COPY go.mod .
+COPY go.sum .
+RUN go mod download build
+COPY . .
+
 RUN go get -u github.com/jstemmer/go-junit-report
-RUN mkdir /go/TestResults
 RUN export APP_URL=${APP_URL}
-RUN go test -v ./... -tags e2e_tests | go-junit-report > /go/TestResults/TestReport.xml 
+RUN mkdir /slackbot/TestResults
+RUN go test -v ./... -tags e2e_tests | go-junit-report > /slackbot/TestResults/TestReport.xml
 
 ############################
 # STAGE 2 Upload test results to Azure
@@ -24,7 +30,7 @@ RUN mkdir /tmp/azcopy && \
     tar -xf /tmp/azcopy/azcopy.tar.gz -C /tmp/azcopy &&  \
     /tmp/azcopy/install.sh
 RUN rm -rf /tmp/azcopy
-COPY --from=tester /go/TestResults/TestReport.xml ./TestReport.xml
+COPY --from=tester /slackbot/TestResults/TestReport.xml ./TestReport.xml
 RUN azcopy \
      --source ./TestReport.xml \
      --destination "${STORAGE_ACCT_URL}/E2E_TestReport_${BUILD_NUMBER}.xml" \

@@ -3,9 +3,9 @@ package service
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/buildit/slackbot/pkg/config"
-	"github.com/buildit/slackbot/pkg/database"
-	"github.com/buildit/slackbot/pkg/poll"
+	"github.com/buildit/slackbot/config"
+	"github.com/buildit/slackbot/database"
+	"github.com/buildit/slackbot/poll"
 	"github.com/nlopes/slack"
 	"github.com/nlopes/slack/slackevents"
 	log "github.com/sirupsen/logrus"
@@ -25,6 +25,7 @@ func init() {
 }
 
 func ListenAndServeHome(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Received a request to serve.")
 	w.Write([]byte("Hello from the slackbot"))
 	return
 }
@@ -47,8 +48,10 @@ func ListenAndServeSlash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Received a Slash Command: %s", s.Command)
+
 	switch s.Command {
-	case "/poll":
+	case "/createpoll":
 
 		//Take the submitted parameters, normalize the text, and create a Slice of strings
 		params := &slack.Msg{Text: s.Text}
@@ -102,7 +105,7 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Received Message: %s", jsonStr)
+	log.Printf("Received Interaction Payload: %s", jsonStr)
 
 	callbackType := ""
 	id := message.CallbackID
@@ -116,7 +119,7 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 
 		slackPoll, err = poll.GetPoll(database.DBCon, id)
 
-		action := message.ActionCallback.AttachmentActions[0]
+		action := message.Actions[0]
 		if action.Name == "actionCancel" {
 			log.Println("Cancel Poll was selected")
 			slackPoll = poll.CancelPoll(message.User.Name, slackPoll)
@@ -131,7 +134,7 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 
 			log.Printf("Poll '%s' deleted on channel %s at %s. Response with text %s", slackPoll.Identifier, channelID, timestamp, text)
 		} else { //It's a vote calllback
-			slackPoll = poll.AddVote(slackPoll, message.User.Name, message.ActionCallback.AttachmentActions[0].Value)
+			slackPoll = poll.AddVote(slackPoll, message.User.Name, message.Actions[0].Value)
 		}
 
 		//Update Attachment text to ensure it reflects current votes
@@ -140,8 +143,10 @@ func ListenAndServeInteractions(w http.ResponseWriter, r *http.Request) {
 		//Persist the Updated Poll
 		poll.AddPoll(database.DBCon, id, slackPoll)
 
+		log.Printf("Poll persisted to Bolt DB = %+v\n", slackPoll)
+
 		//Update the poll in Slack
-		channelID, timestamp, text, err := api.UpdateMessage(message.Channel.ID, message.MessageTs, slack.MsgOptionText(slackPoll.Attachment.Title, false), slack.MsgOptionAttachments(slackPoll.Attachment))
+		channelID, timestamp, text, err := api.UpdateMessage(message.Channel.ID, message.MessageTs, slack.MsgOptionText(slackPoll.Title, false), slack.MsgOptionAttachments(slackPoll.Attachment))
 		if err != nil {
 			log.Printf("%s", err)
 			return

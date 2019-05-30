@@ -2,7 +2,7 @@ package poll
 
 import (
 	"fmt"
-	"github.com/buildit/slackbot/pkg/util"
+	"github.com/buildit/slackbot/util"
 	"github.com/nlopes/slack"
 	log "github.com/sirupsen/logrus"
 	"math/rand"

@@ -23,7 +23,13 @@ To begin developing against this repository, the following steps should be follo
 1) Setup environment variables    
 
         export GOPATH=<Path on your machine where go modules will be stored>
-        export GOROOT=<Path to your go installation binary>    Slackbot is built with golang 1.12.5
+        
+        Obtain the two tokens that are passed into the app are used to verify API requests.  Both tokens are registered with Slack for the app and will be sent with API requests. However, each serve a different purpose. The Verification token is used to validate Domain changes in slack. When the event url is changed [here](https://api.slack.com/apps/AG29FUH1U/event-subscriptions?), the bot will handle the request and echo the token back to validate communication.  The Oauth token is used by the app to validate all other API requests coming from Slack. 
+            export APPSETTING_SLACKBOT_OAUTHTOKEN: <value below>
+            export APPSETTING_SLACKBOT_VERIFICATIONTOKEN: <value below>
+    
+            APSETTING_SLACKBOT_VERIFICATIONTOKEN: https://api.slack.com/apps/AG29FUH1U/general?  
+            APPSETTING_SLACKBOT_OAUTHTOKEN: https://api.slack.com/apps/AG29FUH1U/oauth?
     
 2) Clone to Repo
  
@@ -32,16 +38,14 @@ To begin developing against this repository, the following steps should be follo
 3) Build the Container    
 
         cd <workspace>/slackbot  
-        DOCKER_BUILDKIT=1 docker build --target=final -f Dockerfile_local -t slackbot:latest .  
+        
+        docker build --build-arg APPSETTING_SLACKBOT_OAUTHTOKEN=${APPSETTING_SLACKBOT_OAUTHTOKEN} --build-arg APPSETTING_SLACKBOT_VERIFICATIONTOKEN=${APPSETTING_SLACKBOT_VERIFICATIONTOKEN} --target=final -f Dockerfile_local -t slackbot:latest .
+        
         
 4) Run the Container
 
-        Obtain the two tokens that are passed into the app are used to verify API requests.  Both tokens are registered with Slack for the app and will be sent with API requests. However, each serve a different purpose. The Verification token is used to validate Domain changes in slack. When the event url is changed [here](https://api.slack.com/apps/AG29FUH1U/event-subscriptions?), the bot will handle the request and echo the token back to validate communication.  The Oauth token is used by the app to validate all other API requests coming from Slack. 
-
-        APPSETTING_SLACKBOT_VERIFICATIONTOKEN: https://api.slack.com/apps/AG29FUH1U/general?  
-        APPSETTING_SLACKBOT_OAUTHTOKEN: https://api.slack.com/apps/AG29FUH1U/oauth?
+        docker run -d -p 4390:4390 -e APPSETTING_SLACKBOT_OAUTHTOKEN=${APPSETTING_SLACKBOT_OAUTHTOKEN} -e APPSETTING_SLACKBOT_VERIFICATIONTOKEN=${APPSETTING_SLACKBOT_VERIFICATIONTOKEN} slackbot:latest  
         
-        docker run -d -p 4390:4390 -e APPSETTING_SLACKBOT_OAUTHTOKEN="<oauthtoken>" -e APPSETTING_SLACKBOT_VERIFICATIONTOKEN="<verificationtoken>" slackbot:latest  
 5) Configure slack to communicate with your slackbot container that is now running on localhost
 
         Once the app is running, Slack needs to be pointed at the running container. For running the app locally on your machine you can establish a tunnel to a port on your machine using NGROK. However, when you point slack at this local domain (step 4 below), the hosted app will no longer be receiving API events.  Note: This works for the time being, but if the bot/app gets higher usage, this local development and repointing of slack will not suffice.

@@ -4,8 +4,12 @@
 
 FROM golang:1.12.5-alpine AS builder
 #https://github.com/golang/go/issues/28065
+
+ARG APPSETTING_SLACKBOT_OAUTHTOKEN
+ARG APPSETTING_SLACKBOT_VERIFICATIONTOKEN
 ENV CGO_ENABLED=0
 ENV GO111MODULE=on
+
 
 RUN apk update && apk add --no-cache ca-certificates openssl openssh curl bash git && update-ca-certificates
 RUN mkdir /slackbot && mkdir /slackbot/TestResults

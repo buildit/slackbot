@@ -5,7 +5,7 @@ FROM golang:1.12.1-stretch AS tester
 ARG APP_URL
 ENV GO111MODULE=on
 
-RUN mkdir -p /slackbot && mkdir /slackbot/TestResults 
+RUN mkdir /slackbot && mkdir /slackbot/TestResults 
 WORKDIR /slackbot
 COPY go.mod .
 COPY go.sum .
@@ -14,7 +14,6 @@ COPY . .
 
 RUN go get -u github.com/jstemmer/go-junit-report
 RUN export APP_URL=${APP_URL}
-RUN mkdir /slackbot/TestResults
 RUN go test -v ./... -tags e2e_tests | go-junit-report > /slackbot/TestResults/TestReport.xml
 
 ############################

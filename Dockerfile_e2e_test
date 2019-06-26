@@ -5,7 +5,7 @@ FROM golang:1.12.1-stretch AS tester
 ARG APP_URL
 ENV GO111MODULE=on
 
-RUN mkdir /slackbot && mkdir /slackbot/TestResults 
+RUN mkdir -p /slackbot && mkdir /slackbot/TestResults 
 WORKDIR /slackbot
 COPY go.mod .
 COPY go.sum .
